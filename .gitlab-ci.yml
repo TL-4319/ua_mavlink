@@ -1,0 +1,19 @@
+stages:
+  - lint
+
+Lint:
+  stage: lint
+  tags:
+    - bfs
+  script: 
+    - cpplint --verbose=0 src/heartbeat.h
+    - cpplint --verbose=0 src/util.h
+    - cpplint --verbose=0 src/parameter.h
+    - cpplint --verbose=0 src/telemetry.h
+    - cpplint --verbose=0 src/mission.h
+    - cpplint --verbose=0 src/mavlink.h
+    - cpplint --verbose=0 src/rtcm.h
+    - cpplint --verbose=0 src/heartbeat.cpp
+    - cpplint --verbose=0 src/telemetry.cpp
+    - cpplint --verbose=0 src/mission.cpp
+    - cpplint --verbose=0 src/rtcm.cpp
