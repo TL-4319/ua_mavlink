@@ -20,7 +20,7 @@
 * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-* IN THE SOFTWARE.
+* IN THE SOFTWARE.dd
 */
 
 #include "mavlink.h"
@@ -37,12 +37,8 @@ std::array<bfs::MissionItem, 250> temp;
 
 /*
 * A MavLink object with 5 parameters that can be tuned in real-time from the GCS
-* and up to 10 simultaneous UTM messages received
 */
-bfs::MavLink<5, 10> mavlink;
-
-bool send_update = false;
-elapsedMillis t = 0;
+bfs::MavLink<5> mavlink;
 
 int main() {
   /* Starting serial to print results */
@@ -62,7 +58,6 @@ int main() {
     mavlink.Update();
     /* Check to see if the mission has been updated and print mission items */
     if (mavlink.mission_updated()) {
-      Serial.println("MISSION UPDATED");
       Serial.println(mavlink.num_mission_items());
       for (std::size_t i = 0; i < mavlink.num_mission_items(); i++) {
         Serial.print(mission[i].x);
@@ -70,18 +65,8 @@ int main() {
         Serial.print(mission[i].y);
         Serial.print("\t");
         Serial.print(mission[i].z);
-        Serial.print("\t");
-        mission[i].z += 100;
-        Serial.print(mission[i].z);
         Serial.print("\n");
       }
-      send_update = true;
-      t = 0;
-    }
-    if ((send_update) && (t > 10000)) {
-      mavlink.num_mission_items(mavlink.num_mission_items());
-      send_update = false;
-      Serial.println("UPDATE SENT");
     }
   }
 }

@@ -61,46 +61,6 @@ void MavLinkTelemetry::MsgHandler(const mavlink_message_t &ref) {
       ParseRequestDataStream(request_stream_);
       break;
     }
-    case MAVLINK_MSG_ID_HOME_POSITION: {
-      mavlink_msg_home_position_decode(&ref, &home_pos_);
-      ParseHomePosition(home_pos_);
-      break;
-    }
-    case MAVLINK_MSG_ID_SCALED_IMU: {
-      mavlink_msg_scaled_imu_decode(&ref, &scaled_imu_);
-      ParseScaledImu(scaled_imu_);
-      break;
-    }
-    case MAVLINK_MSG_ID_SCALED_PRESSURE: {
-      mavlink_msg_scaled_pressure_decode(&ref, &scaled_pres_);
-      ParseScaledPres(scaled_pres_);
-      break;
-    }
-    case MAVLINK_MSG_ID_GPS_RAW_INT: {
-      mavlink_msg_gps_raw_int_decode(&ref, &gps_raw_int_);
-      ParseGpsRawInt(gps_raw_int_);
-      break;
-    }
-    case MAVLINK_MSG_ID_ATTITUDE: {
-      mavlink_msg_attitude_decode(&ref, &attitude_);
-      ParseAttitude(attitude_);
-      break;
-    }
-    case MAVLINK_MSG_ID_VFR_HUD: {
-      mavlink_msg_vfr_hud_decode(&ref, &vfr_hud_);
-      ParseVfrHud(vfr_hud_);
-      break;
-    }
-    case MAVLINK_MSG_ID_LOCAL_POSITION_NED: {
-      mavlink_msg_local_position_ned_decode(&ref, &local_pos_ned_);
-      ParseLocalPosNed(local_pos_ned_);
-      break;
-    }
-    case MAVLINK_MSG_ID_GLOBAL_POSITION_INT: {
-      mavlink_msg_global_position_int_decode(&ref, &global_pos_int_);
-      ParseGlobalPosInt(global_pos_int_);
-      break;
-    }
   }
 }
 void MavLinkTelemetry::SRx_ALL() {
@@ -181,10 +141,7 @@ void MavLinkTelemetry::SendSysStatus() {
                                          battery_remaining_, drop_rate_comm_,
                                          errors_comm_, errors_count_[0],
                                          errors_count_[1], errors_count_[2],
-                                         errors_count_[3],
-                                         onboard_control_sensors_present_ext_,
-                                         onboard_control_sensors_present_ext_,
-                                         onboard_control_sensors_present_ext_);
+                                         errors_count_[3]);
   mavlink_msg_to_send_buffer(msg_buf_, &msg_);
   bus_->write(msg_buf_, msg_len_);
 }
@@ -287,29 +244,7 @@ void MavLinkTelemetry::SendVfrHud() {
   mavlink_msg_to_send_buffer(msg_buf_, &msg_);
   bus_->write(msg_buf_, msg_len_);
 }
-void MavLinkTelemetry::SRx_EXTRA3() {
-  SendWindCov();
-  SendSystemTime();
-}
-
-void MavLinkTelemetry::SendWindCov() {
-  msg_len_ = mavlink_msg_wind_cov_pack(sys_id_, comp_id_, &msg_, sys_time_us_,
-                                       wind_x_mps_, wind_y_mps_, wind_z_mps_,
-                                       wind_var_horz_mps_, wind_var_vert_mps_,
-                                       wind_alt_m_, wind_horz_acc_mps_,
-                                       wind_vert_acc_mps_);
-  mavlink_msg_to_send_buffer(msg_buf_, &msg_);
-  bus_->write(msg_buf_, msg_len_);
-}
-
-void MavLinkTelemetry::SendSystemTime() {
-  sys_time_ms_ = static_cast<uint32_t>(sys_time_us_ / 1000);
-  msg_len_ = mavlink_msg_system_time_pack(sys_id_, comp_id_, &msg_,
-                                          unix_time_us_, sys_time_ms_);
-  mavlink_msg_to_send_buffer(msg_buf_, &msg_);
-  bus_->write(msg_buf_, msg_len_);
-}
-
+void MavLinkTelemetry::SRx_EXTRA3() {}
 void MavLinkTelemetry::SendBatteryStatus() {
   if (battery_volt_.set) {
     volt_[0] = static_cast<uint16_t>(battery_volt_.val * 1000.0f);
@@ -501,111 +436,6 @@ void MavLinkTelemetry::ParseRequestDataStream(
       data_stream_period_ms_[ref.req_stream_id] = -1;
     }
   }
-}
-void MavLinkTelemetry::ParseScaledImu(const mavlink_scaled_imu_t &ref) {
-  rx_imu_accel_x_mps2_ = convacc(static_cast<float>(ref.xacc) / 1000.0f,
-                                 LinAccUnit::G, LinAccUnit::MPS2);
-  rx_imu_accel_y_mps2_ = convacc(static_cast<float>(ref.yacc) / 1000.0f,
-                                LinAccUnit::G, LinAccUnit::MPS2);
-  rx_imu_accel_z_mps2_ = convacc(static_cast<float>(ref.zacc) / 1000.0f,
-                                 LinAccUnit::G, LinAccUnit::MPS2);
-  rx_imu_gyro_x_radps_ = static_cast<float>(ref.xgyro) / 1000.0f;
-  rx_imu_gyro_y_radps_ = static_cast<float>(ref.ygyro) / 1000.0f;
-  rx_imu_gyro_z_radps_ = static_cast<float>(ref.zgyro) / 1000.0f;
-  rx_imu_mag_x_ut_ = static_cast<float>(ref.xmag) / 10.0f;
-  rx_imu_mag_y_ut_ = static_cast<float>(ref.ymag) / 10.0f;
-  rx_imu_mag_z_ut_ = static_cast<float>(ref.zmag) / 10.0f;
-  if (ref.temperature != 0) {
-    rx_imu_die_temp_c_ = static_cast<float>(ref.temperature) / 100.0f;
-  }
-}
-void MavLinkTelemetry::ParseScaledPres(const mavlink_scaled_pressure_t &ref) {
-  rx_static_pres_pa_ = convpres(ref.press_abs, PresUnit::HPA, PresUnit::PA);
-  rx_diff_pres_pa_ = convpres(ref.press_diff, PresUnit::HPA, PresUnit::PA);
-  rx_static_pres_die_temp_c_ = static_cast<float>(ref.temperature) / 100.0f;
-  if (ref.temperature_press_diff != 0) {
-    rx_diff_pres_die_temp_c_ = static_cast<float>(ref.temperature_press_diff) /
-                               100.0f;
-  }
-}
-void MavLinkTelemetry::ParseGpsRawInt(const mavlink_gps_raw_int_t &ref) {
-  rx_gnss_fix_ = ref.fix_type;
-  rx_gnss_lat_rad_ = static_cast<double>(ref.lat) / 1e7;
-  rx_gnss_lon_rad_ = static_cast<double>(ref.lon) / 1e7;
-  rx_gnss_alt_msl_m_ = static_cast<float>(ref.alt) / 1000.0f;
-  if (ref.eph != UINT16_MAX) {
-    rx_gnss_hdop_ = static_cast<float>(ref.eph) / 100.0f;
-  }
-  if (ref.epv != UINT16_MAX) {
-    rx_gnss_vdop_ = static_cast<float>(ref.epv) / 100.0f;
-  }
-  if (ref.vel != UINT16_MAX) {
-    rx_gnss_spd_mps_ = static_cast<float>(ref.vel) / 100.0f;
-  }
-  if (ref.cog != UINT16_MAX) {
-    rx_gnss_track_rad_ = deg2rad(static_cast<float>(ref.cog) / 100.0f);
-  }
-  if (ref.satellites_visible != UINT8_MAX) {
-    rx_gnss_num_sats_ = ref.satellites_visible;
-  }
-  rx_gnss_alt_wgs84_m_ = static_cast<float>(ref.alt_ellipsoid) / 1000.0f;
-  rx_gnss_horz_acc_m_ = static_cast<float>(ref.h_acc) / 1000.0f;
-  rx_gnss_vert_acc_m_ = static_cast<float>(ref.v_acc) / 1000.0f;
-  rx_gnss_vel_acc_mps_ = static_cast<float>(ref.vel_acc) / 1000.0f;
-  rx_gnss_track_acc_rad_ = deg2rad(static_cast<float>(ref.hdg_acc) / 100000.0f);
-  if ((ref.yaw != 0) && (ref.yaw != UINT16_MAX)) {
-    rx_gnss_yaw_ = deg2rad(static_cast<float>(ref.yaw) / 100.0f);
-  }
-}
-void MavLinkTelemetry::ParseAttitude(const mavlink_attitude_t &ref) {
-  rx_nav_pitch_rad = ref.pitch;
-  rx_nav_roll_rad = ref.roll;
-  rx_nav_hdg_rad = ref.yaw;
-  rx_nav_gyro_x_radps = ref.rollspeed;
-  rx_nav_gyro_y_radps = ref.pitchspeed;
-  rx_nav_gyro_z_radps = ref.yawspeed;
-}
-void MavLinkTelemetry::ParseVfrHud(const mavlink_vfr_hud_t &ref) {
-  rx_nav_ias_mps_ = ref.airspeed;
-  rx_nav_gnd_spd_mps_ = ref.groundspeed;
-}
-void MavLinkTelemetry::ParseLocalPosNed(
-                                      const mavlink_local_position_ned_t &ref) {
-  rx_nav_north_pos_m_ = ref.x;
-  rx_nav_east_pos_m_ = ref.y;
-  rx_nav_down_pos_m_ = ref.z;
-  rx_nav_north_vel_mps_ = ref.vx;
-  rx_nav_east_vel_mps_ = ref.vy;
-  rx_nav_down_vel_mps_ = ref.vz;
-}
-void MavLinkTelemetry::ParseGlobalPosInt(
-                                     const mavlink_global_position_int_t &ref) {
-  rx_nav_lat_rad_ = deg2rad(static_cast<double>(ref.lat) / 1e7);
-  rx_nav_lon_rad_ = deg2rad(static_cast<double>(ref.lon) / 1e7);
-  rx_nav_alt_msl_m_ = static_cast<float>(ref.alt) / 1000.0f;
-  rx_nav_alt_agl_m_ = static_cast<float>(ref.relative_alt) / 1000.0f;
-  rx_nav_north_vel_mps_ = static_cast<float>(ref.vx) / 100.0f;
-  rx_nav_east_vel_mps_ = static_cast<float>(ref.vy) / 100.0f;
-  rx_nav_down_vel_mps_ = static_cast<float>(ref.vz) /100.0f;
-}
-
-void MavLinkTelemetry::SendHomePos() {
-  lat_dege7_ = static_cast<int32_t>(rad2deg(home_lat_rad_) * 1e7);
-  lon_dege7_ = static_cast<int32_t>(rad2deg(home_lon_rad_) * 1e7);
-  alt_msl_mm_ = static_cast<int32_t>(home_alt_m_ * 1000.0f);
-  float q[4];
-  msg_len_ = mavlink_msg_home_position_pack(sys_id_, comp_id_, &msg_,
-                                            lat_dege7_, lon_dege7_,
-                                            alt_msl_mm_, 0, 0, 0,
-                                            q, 0, 0, 0, 0);
-  mavlink_msg_to_send_buffer(msg_buf_, &msg_);
-  bus_->write(msg_buf_, msg_len_);
-}
-
-void MavLinkTelemetry::ParseHomePosition(const mavlink_home_position_t &ref) {
-  rx_home_lat_rad_ = deg2rad(static_cast<double>(ref.latitude) / 1e7);
-  rx_home_lon_rad_ = deg2rad(static_cast<double>(ref.longitude) / 1e7);
-  rx_home_alt_m_ = static_cast<float>(ref.altitude) / 1000.0f;
 }
 
 }  // namespace bfs

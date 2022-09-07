@@ -28,23 +28,14 @@
 
 #if defined(ARDUINO)
 #include "Arduino.h"
-#include "optional.hpp"
 #else
-#include <optional>
 #include "core/core.h"
 #endif
 #include <array>
 #include "mavlink/mavlink_types.h"
 #include "mavlink/common/mavlink.h"
 
-
 namespace bfs {
-
-#if defined(ARDUINO)
-using nonstd::optional;
-#else
-using std::optional;
-#endif
 
 enum GnssFix : int8_t {
   GNSS_FIX_NONE = 1,
@@ -60,7 +51,6 @@ class MavLinkTelemetry {
   /* Config */
   inline void hardware_serial(HardwareSerial *bus) {bus_ = bus;}
   inline void sys_id(const uint8_t sys_id) {sys_id_ = sys_id;}
-  inline void comp_id(const uint8_t comp_id) {comp_id_ = comp_id;}
   /* Update and message handler methods */
   void Update();
   void MsgHandler(const mavlink_message_t &ref);
@@ -247,284 +237,13 @@ class MavLinkTelemetry {
     use_throttle_prcnt_ = true;
     throttle_prcnt_ = val;
   }
-  /* Wind Covariance */
-  inline void wind_north_vel_mps(const float val) {wind_x_mps_ = val;}
-  inline void wind_east_vel_mps(const float val) {wind_y_mps_ = val;}
-  inline void wind_down_vel_mps(const float val) {wind_z_mps_ = val;}
-  inline void wind_var_horz_mps(const float val) {wind_var_horz_mps_ = val;}
-  inline void wind_var_vert_mps(const float val) {wind_var_vert_mps_ = val;}
-  inline void wind_meas_alt_m(const float val) {wind_alt_m_ = val;}
-  inline void wind_horz_acc_mps(const float val) {wind_horz_acc_mps_ = val;}
-  inline void wind_vert_acc_mps(const float val) {wind_vert_acc_mps_ = val;}
-  /* Unix time */
-  inline void unix_time_us(const uint64_t val) {unix_time_us_ = val;}
-  /* Home position */
-  inline void home_lat_rad(const double val) {home_lat_rad_ = val;}
-  inline void home_lon_rad(const double val) {home_lon_rad_ = val;}
-  inline void home_alt_m(const float val) {home_alt_m_ = val;}
-  void SendHomePos();
-  /* Receive home position */
-  inline optional<double> home_lat_rad() {
-    optional<double> ret = rx_home_lat_rad_;
-    rx_home_lat_rad_.reset();
-    return ret;
-  }
-  inline optional<double> home_lon_rad() {
-    optional<double> ret = rx_home_lon_rad_;
-    rx_home_lon_rad_.reset();
-    return ret;
-  }
-  inline optional<float> home_alt_m() {
-    optional<float> ret = rx_home_alt_m_;
-    rx_home_alt_m_.reset();
-    return ret;
-  }
-  /* Receive IMU data */
-  inline optional<float> imu_accel_x_mps2() {
-    optional<float> ret = rx_imu_accel_x_mps2_;
-    rx_imu_accel_x_mps2_.reset();
-    return ret;
-  }
-  inline optional<float> imu_accel_y_mps2() {
-    optional<float> ret = rx_imu_accel_y_mps2_;
-    rx_imu_accel_y_mps2_.reset();
-    return ret;
-  }
-  inline optional<float> imu_accel_z_mps2() {
-    optional<float> ret = rx_imu_accel_z_mps2_;
-    rx_imu_accel_z_mps2_.reset();
-    return ret;
-  }
-  inline optional<float> imu_gyro_x_radps() {
-    optional<float> ret = rx_imu_gyro_x_radps_;
-    rx_imu_gyro_x_radps_.reset();
-    return ret;
-  }
-  inline optional<float> imu_gyro_y_radps() {
-    optional<float> ret = rx_imu_gyro_y_radps_;
-    rx_imu_gyro_y_radps_.reset();
-    return ret;
-  }
-  inline optional<float> imu_gyro_z_radps() {
-    optional<float> ret = rx_imu_gyro_z_radps_;
-    rx_imu_gyro_z_radps_.reset();
-    return ret;
-  }
-  inline optional<float> imu_mag_x_ut() {
-    optional<float> ret = rx_imu_mag_x_ut_;
-    rx_imu_mag_x_ut_.reset();
-    return ret;
-  }
-  inline optional<float> imu_mag_y_ut() {
-    optional<float> ret = rx_imu_mag_y_ut_;
-    rx_imu_mag_y_ut_.reset();
-    return ret;
-  }
-  inline optional<float> imu_mag_z_ut() {
-    optional<float> ret = rx_imu_mag_z_ut_;
-    rx_imu_mag_z_ut_.reset();
-    return ret;
-  }
-  inline optional<float> imu_die_temp_c() {
-    optional<float> ret = rx_imu_die_temp_c_;
-    rx_imu_die_temp_c_.reset();
-    return ret;
-  }
-  /* Air data */
-  inline optional<float> static_pres_pa() {
-    optional<float> ret = rx_static_pres_pa_;
-    rx_static_pres_pa_.reset();
-    return ret;
-  }
-  inline optional<float> diff_pres_pa() {
-    optional<float> ret = rx_diff_pres_pa_;
-    rx_diff_pres_pa_.reset();
-    return ret;
-  }
-  inline optional<float> static_pres_die_temp_c() {
-    optional<float> ret = rx_static_pres_die_temp_c_;
-    rx_static_pres_die_temp_c_.reset();
-    return ret;
-  }
-  inline optional<float> diff_pres_die_temp_c() {
-    optional<float> ret = rx_diff_pres_die_temp_c_;
-    rx_diff_pres_die_temp_c_.reset();
-    return ret;
-  }
-  /* GNSS data */
-  inline optional<int8_t> gnss_fix() {
-    optional<int8_t> ret = rx_gnss_fix_;
-    rx_gnss_fix_.reset();
-    return ret;
-  }
-  inline optional<int8_t> gnss_num_sats() {
-    optional<int8_t> ret = rx_gnss_num_sats_;
-    rx_gnss_num_sats_.reset();
-    return ret;
-  }
-  inline optional<double> gnss_lat_rad() {
-    optional<double> ret = rx_gnss_lat_rad_;
-    rx_gnss_lat_rad_.reset();
-    return ret;
-  }
-  inline optional<double> gnss_lon_rad() {
-    optional<double> ret = rx_gnss_lon_rad_;
-    rx_gnss_lon_rad_.reset();
-    return ret;
-  }
-  inline optional<float> gnss_alt_msl_m() {
-    optional<float> ret = rx_gnss_alt_msl_m_;
-    rx_gnss_alt_msl_m_.reset();
-    return ret;
-  }
-  inline optional<float> gnss_alt_wgs84_m() {
-    optional<float> ret = rx_gnss_alt_wgs84_m_;
-    rx_gnss_alt_wgs84_m_.reset();
-    return ret;
-  }
-  inline optional<float> gnss_hdop() {
-    optional<float> ret = rx_gnss_hdop_;
-    rx_gnss_hdop_.reset();
-    return ret;
-  }
-  inline optional<float> gnss_vdop() {
-    optional<float> ret = rx_gnss_vdop_;
-    rx_gnss_vdop_.reset();
-    return ret;
-  }
-  inline optional<float> gnss_track_rad() {
-    optional<float> ret = rx_gnss_track_rad_;
-    rx_gnss_track_rad_.reset();
-    return ret;
-  }
-  inline optional<float> gnss_spd_mps() {
-    optional<float> ret = rx_gnss_spd_mps_;
-    rx_gnss_spd_mps_.reset();
-    return ret;
-  }
-  inline optional<float> gnss_horz_acc_m() {
-    optional<float> ret = rx_gnss_horz_acc_m_;
-    rx_gnss_horz_acc_m_.reset();
-    return ret;
-  }
-  inline optional<float> gnss_vert_acc_m() {
-    optional<float> ret = rx_gnss_vert_acc_m_;
-    rx_gnss_vert_acc_m_.reset();
-    return ret;
-  }
-  inline optional<float> gnss_vel_acc_mps() {
-    optional<float> ret = rx_gnss_vel_acc_mps_;
-    rx_gnss_vel_acc_mps_.reset();
-    return ret;
-  }
-  inline optional<float> gnss_track_acc_rad() {
-    optional<float> ret = rx_gnss_track_acc_rad_;
-    rx_gnss_track_acc_rad_.reset();
-    return ret;
-  }
-  inline optional<float> gnss_yaw_rad() {
-    optional<float> ret = rx_gnss_yaw_;
-    rx_gnss_yaw_.reset();
-    return ret;
-  }
-  /* Navigation filter data */
-  inline optional<double> nav_lat_rad() {
-    optional<double> ret = rx_nav_lat_rad_;
-    rx_nav_lat_rad_.reset();
-    return ret;
-  }
-  inline optional<double> nav_lon_rad() {
-    optional<double> ret = rx_nav_lon_rad_;
-    rx_nav_lon_rad_.reset();
-    return ret;
-  }
-  inline optional<float> nav_alt_msl_m() {
-    optional<float> ret = rx_nav_alt_msl_m_;
-    rx_nav_alt_msl_m_.reset();
-    return ret;
-  }
-  inline optional<float> nav_alt_agl_m() {
-    optional<float> ret = rx_nav_alt_agl_m_;
-    rx_nav_alt_agl_m_.reset();
-    return ret;
-  }
-  inline optional<float> nav_north_pos_m() {
-    optional<float> ret = rx_nav_north_pos_m_;
-    rx_nav_north_pos_m_.reset();
-    return ret;
-  }
-  inline optional<float> nav_east_pos_m() {
-    optional<float> ret = rx_nav_east_pos_m_;
-    rx_nav_east_pos_m_.reset();
-    return ret;
-  }
-  inline optional<float> nav_down_pos_m() {
-    optional<float> ret = rx_nav_down_pos_m_;
-    rx_nav_down_pos_m_.reset();
-    return ret;
-  }
-  inline optional<float> nav_north_vel_mps() {
-    optional<float> ret = rx_nav_north_vel_mps_;
-    rx_nav_north_vel_mps_.reset();
-    return ret;
-  }
-  inline optional<float> nav_east_vel_mps() {
-    optional<float> ret = rx_nav_east_vel_mps_;
-    rx_nav_east_vel_mps_.reset();
-    return ret;
-  }
-  inline optional<float> nav_down_vel_mps() {
-    optional<float> ret = rx_nav_down_vel_mps_;
-    rx_nav_down_vel_mps_.reset();
-    return ret;
-  }
-  inline optional<float> nav_gnd_spd_mps() {
-    optional<float> ret = rx_nav_gnd_spd_mps_;
-    rx_nav_gnd_spd_mps_.reset();
-    return ret;
-  }
-  inline optional<float> nav_ias_mps() {
-    optional<float> ret = rx_nav_ias_mps_;
-    rx_nav_ias_mps_.reset();
-    return ret;
-  }
-  inline optional<float> nav_pitch_rad() {
-    optional<float> ret = rx_nav_pitch_rad;
-    rx_nav_pitch_rad.reset();
-    return ret;
-  }
-  inline optional<float> nav_roll_rad() {
-    optional<float> ret = rx_nav_roll_rad;
-    rx_nav_roll_rad.reset();
-    return ret;
-  }
-  inline optional<float> nav_hdg_rad() {
-    optional<float> ret = rx_nav_hdg_rad;
-    rx_nav_hdg_rad.reset();
-    return ret;
-  }
-  inline optional<float> nav_gyro_x_radps() {
-    optional<float> ret = rx_nav_gyro_x_radps;
-    rx_nav_gyro_x_radps.reset();
-    return ret;
-  }
-  inline optional<float> nav_gyro_y_radps() {
-    optional<float> ret = rx_nav_gyro_y_radps;
-    rx_nav_gyro_y_radps.reset();
-    return ret;
-  }
-  inline optional<float> nav_gyro_z_radps() {
-    optional<float> ret = rx_nav_gyro_z_radps;
-    rx_nav_gyro_z_radps.reset();
-    return ret;
-  }
 
  private:
   /* Serial bus */
   HardwareSerial *bus_;
   /* Config */
   uint8_t sys_id_ = 1;
-  uint8_t comp_id_ = MAV_COMP_ID_AUTOPILOT1;
+  static constexpr uint8_t comp_id_ = MAV_COMP_ID_AUTOPILOT1;
   /* Message buffer */
   mavlink_message_t msg_;
   uint16_t msg_len_;
@@ -535,16 +254,8 @@ class MavLinkTelemetry {
     T val = static_cast<T>(0);
     bool set = false;
   };
-  /* Home */
-  double home_lat_rad_, home_lon_rad_;
-  float home_alt_m_;
-  mavlink_home_position_t home_pos_;
-  optional<double> rx_home_lat_rad_, rx_home_lon_rad_;
-  optional<float> rx_home_alt_m_;
-  void ParseHomePosition(const mavlink_home_position_t &ref);
   /* System */
   uint64_t sys_time_us_ = 0;
-  uint64_t unix_time_us_ = 0;
   uint32_t frame_time_us_ = 0;
   uint32_t frame_period_us_ = 0;
   bool gyro_installed_ = false;
@@ -627,80 +338,6 @@ class MavLinkTelemetry {
   int8_t throttle_ch_ = 0;
   float throttle_prcnt_;
   bool use_throttle_prcnt_ = false;
-  /* Wind */
-  float wind_x_mps_ = 0.0f;
-  float wind_y_mps_ = 0.0f;
-  float wind_z_mps_ = 0.0f;
-  float wind_var_horz_mps_ = 0.0f;
-  float wind_var_vert_mps_ = 0.0f;
-  float wind_alt_m_ = 0.0f;
-  float wind_horz_acc_mps_ = 0.0f;
-  float wind_vert_acc_mps_ = 0.0f;
-  /* RX Data - IMU */
-  mavlink_scaled_imu_t scaled_imu_;
-  optional<float> rx_imu_accel_x_mps2_;
-  optional<float> rx_imu_accel_y_mps2_;
-  optional<float> rx_imu_accel_z_mps2_;
-  optional<float> rx_imu_gyro_x_radps_;
-  optional<float> rx_imu_gyro_y_radps_;
-  optional<float> rx_imu_gyro_z_radps_;
-  optional<float> rx_imu_mag_x_ut_;
-  optional<float> rx_imu_mag_y_ut_;
-  optional<float> rx_imu_mag_z_ut_;
-  optional<float> rx_imu_die_temp_c_;
-  void ParseScaledImu(const mavlink_scaled_imu_t &ref);
-  /* RX Data - air data */
-  mavlink_scaled_pressure_t scaled_pres_;
-  optional<float> rx_static_pres_pa_;
-  optional<float> rx_diff_pres_pa_;
-  optional<float> rx_static_pres_die_temp_c_;
-  optional<float> rx_diff_pres_die_temp_c_;
-  void ParseScaledPres(const mavlink_scaled_pressure_t &ref);
-  /* RX Data - GNSS */
-  mavlink_gps_raw_int_t gps_raw_int_;
-  optional<int8_t> rx_gnss_fix_;
-  optional<int8_t> rx_gnss_num_sats_;
-  optional<double> rx_gnss_lat_rad_;
-  optional<double> rx_gnss_lon_rad_;
-  optional<float> rx_gnss_alt_msl_m_;
-  optional<float> rx_gnss_alt_wgs84_m_;
-  optional<float> rx_gnss_hdop_;
-  optional<float> rx_gnss_vdop_;
-  optional<float> rx_gnss_track_rad_;
-  optional<float> rx_gnss_spd_mps_;
-  optional<float> rx_gnss_horz_acc_m_;
-  optional<float> rx_gnss_vert_acc_m_;
-  optional<float> rx_gnss_vel_acc_mps_;
-  optional<float> rx_gnss_track_acc_rad_;
-  optional<float> rx_gnss_yaw_;
-  void ParseGpsRawInt(const mavlink_gps_raw_int_t &ref);
-  /* RX Data - navigation filter */
-  mavlink_attitude_t attitude_;
-  optional<float> rx_nav_pitch_rad;
-  optional<float> rx_nav_roll_rad;
-  optional<float> rx_nav_hdg_rad;
-  optional<float> rx_nav_gyro_x_radps;
-  optional<float> rx_nav_gyro_y_radps;
-  optional<float> rx_nav_gyro_z_radps;
-  void ParseAttitude(const mavlink_attitude_t &ref);
-  mavlink_vfr_hud_t vfr_hud_;
-  optional<float> rx_nav_ias_mps_;
-  optional<float> rx_nav_gnd_spd_mps_;
-  void ParseVfrHud(const mavlink_vfr_hud_t &ref);
-  mavlink_local_position_ned_t local_pos_ned_;
-  optional<float> rx_nav_north_pos_m_;
-  optional<float> rx_nav_east_pos_m_;
-  optional<float> rx_nav_down_pos_m_;
-  void ParseLocalPosNed(const mavlink_local_position_ned_t &ref);
-  mavlink_global_position_int_t global_pos_int_;
-  optional<double> rx_nav_lat_rad_;
-  optional<double> rx_nav_lon_rad_;
-  optional<float> rx_nav_alt_msl_m_;
-  optional<float> rx_nav_alt_agl_m_;
-  optional<float> rx_nav_north_vel_mps_;
-  optional<float> rx_nav_east_vel_mps_;
-  optional<float> rx_nav_down_vel_mps_;
-  void ParseGlobalPosInt(const mavlink_global_position_int_t &ref);
   /* Telemetry Messages */
   /* SRx_ALL */
   void SRx_ALL();
@@ -716,8 +353,6 @@ class MavLinkTelemetry {
   void SendVfrHud();
   /* SRx_EXTRA3 */
   void SRx_EXTRA3();
-  void SendWindCov();
-  void SendSystemTime();
   /* SRx_POSITION */
   void SRx_POSITION();
   void SendLocalPositionNed();
@@ -775,7 +410,6 @@ class MavLinkTelemetry {
   static constexpr uint16_t drop_rate_comm_ = 0;
   static constexpr uint16_t errors_comm_ = 0;
   static constexpr uint16_t errors_count_[4] = {0};
-  static constexpr uint32_t onboard_control_sensors_present_ext_ = 0;
   uint32_t sensors_present_;
   uint32_t sensors_healthy_;
   uint16_t load_;
@@ -819,6 +453,7 @@ class MavLinkTelemetry {
   int16_t current_ = -1;
   int32_t current_consumed_ = -1;
   int32_t time_remaining_ = 0;
+
   /* Global position */
   int32_t alt_agl_mm_;
   int16_t vx_cmps_;

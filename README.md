@@ -12,10 +12,9 @@ This library supports the [MAVLink](https://mavlink.io/) protocol, which is a co
 MAVLink is a messaging protocol for communicating between drone components, located both on and off the vehicle. The protocol consists of many message and microservice definitions and [C headers](https://github.com/bolderflight/mavlink_c_library_v2) are available for packing, unpacking, sending, and parsing messages. This library implements each microservice as a class and then wraps all of them into a parent class for easier integration with vehicle software. The supported microservices are:
    * [Heartbeat](https://mavlink.io/en/services/heartbeat.html): establishes communication with other MAVLink components and relays information on vehicle type and status.
    * Utility: sends status texts to the ground station.
-   * Telemetry: sends sensor and estimation data for display on a ground station or use in a MAVLink component. Can also receive SCALED_IMU, SCALED_PRESSURE, GPS_RAW_INT, ATTITUDE, VFR_HUD, LOCAL_POSITION_NED, and GLOBAL_POSITION_NED messages and output the received data.
+   * Telemetry: sends sensor and estimation data for display on a ground station or use in a MAVLink component.
    * [Parameter](https://mavlink.io/en/services/parameter.html): defines parameters whose values can be set by other MAVLink components, such as ground stations. Useful for defining on-board excitations, tunable control law gains, etc. Only floating point types are currently supported.
    * [Mission](https://mavlink.io/en/services/mission.html): enables Mission Items to be sent to the drone from a ground station. These can include flight plans, fences, and rally points.
-   * [UTM](http://mavlink.io/en/services/traffic_management.html): implements the UAS Traffic Management (UTM) microservice, broadcasting the UTM data from the drone and receiving UTM data from other nearby drones.
 
 The MAVLink protocol is massive and documentation is sometimes sparse with respect to *how* components should communicate with each other (the order of messages, what actions the drone or ground control station should take on receiving each message). Further, ground control stations often only use a subset of MAVLink. This library attempts to simplify MAVLink usage by providing an intuitive interface and abstracting away the microservice details.
 
@@ -82,11 +81,11 @@ This library is within the namespace *bfs*
 
 ## MavLink
 
-**MavLink<std::size_t N, std::size_t M>** The MavLink constructor is templated with the number of parameters to support and the number of received UTM messages.
+**MavLink<std::size_t N>** The MavLink constructor is templated with the number of parameters to support.
 
 ```C++
-/* MavLink object support 5 parameters and up to 10 simultaneous UTM broadcasts received */
-bfs::MavLink<5, 10> mavlink;
+/* MavLink object support 5 parameters */
+bfs::MavLink<5> mavlink;
 ```
 
 ## Config
@@ -112,8 +111,6 @@ Available aircraft types are:
 | VTOL               | 3     | VTOL aircraft        |
 
 **inline void sys_id(const uint8_t sys_id)** Used to set a non-default system id. By default the system id is set to 1. This could be used if other vehicles are connected to the ground control station to avoid conflicting system ids.
-
-**inline void comp_id(const uint8_t comp_id)** Used to set a non-default component id. By default the component id is set to 1 ([MAV_COMP_ID_AUTOPILOT1](http://mavlink.io/en/messages/common.html#MAV_COMP_ID_AUTOPILOT1)).
 
 **inline void gnss_serial(HardwareSerial &ast;bus)** Sets the hardware serial bus connected to the GNSS receiver to provide RTCM corrections from a base station GNSS as transmitted via MAV Link from the ground control station software. It is assumed that the serial port is configured external to this class (i.e. serial port initialized and baudrate set correctly).
 
@@ -148,17 +145,6 @@ while (1) {
   mavlink.Update();
 }
 ```
-
-## GCS Link
-
-**bool gcs_link_established()** Returns true if communication has been established with a GCS.
-
-**bool gcs_link_lost()** Returns true if communication has been established with a GCS and a heartbeat from the GCS has not been received in *gcs_timeout_ms* time.
-
-**void gcs_lost_link_timeout_ms(const int32_t val)** Sets the GCS link lost timeout threshold, ms. The default is 5000 ms.
-
-**int32_t gcs_lost_link_timeout_ms()** Returns the GCS link lost timeout threshold, ms.
-
 
 ## Heartbeat data
 
@@ -203,7 +189,7 @@ Telemetry data is grouped into [Data Streams](https://mavlink.io/en/messages/com
 | Position | [Local Position NED](https://mavlink.io/en/messages/common.html#LOCAL_POSITION_NED), [Global Position](https://mavlink.io/en/messages/common.html#GLOBAL_POSITION_INT) |
 | Extra 1 | [Attitude](https://mavlink.io/en/messages/common.html#ATTITUDE) |
 | Extra 2 | [VFR HUD](https://mavlink.io/en/messages/common.html#VFR_HUD) |
-| Extra 3 | [Wind Covariance](http://mavlink.io/en/messages/common.html#WIND_COV), [System Time](http://mavlink.io/en/messages/common.html#SYSTEM_TIME) |
+| Extra 3 | - |
 
 Some ground stations, such as [Mission Planner](https://ardupilot.org/planner/) will request data stream rates from the autopilot, which this library will correctly handle. Other ground stations, such as [QGroundControl](http://qgroundcontrol.com/) do not request data stream rates and they must be set by the autopilot. The following methods enable getting and setting the data stream rates.
 
@@ -412,152 +398,6 @@ Some ground stations, such as [Mission Planner](https://ardupilot.org/planner/) 
 
 **inline void throttle_prcnt(const float val)** Throttle percent.
 
-### Wind
-
-**inline void wind_north_vel_mps(const float val)** Wind in X (NED) direction, m/s
-
-**inline void wind_east_vel_mps(const float val)** Wind in Y (NED) direction, m/s
-
-**inline void wind_down_vel_mps(const float val)** Wind in Z (NED) direction, m/s
-
-**inline void wind_var_horz_mps(const float val)** Variability of the wind in XY. RMS of a 1 Hz lowpassed wind estimate, m/s.
-
-**inline void wind_var_vert_mps(const float val)** Variability of the wind in Z. RMS of a 1 Hz lowpassed wind estimate, m/s.
-
-**inline void wind_meas_alt_m(const float val)** Altitude (MSL) that this measurement was taken at, m.
-
-**inline void wind_horz_acc_mps(const float val)** Horizontal speed 1-STD accuracy, m/s.
-
-**inline void wind_vert_acc_mps(const float val)** Vertical speed 1-STD accuracy, m/s.
-
-### Unix Time
-
-**inline void unix_time_us(const uint64_t val)** Timestamp (UNIX epoch time), us.
-
-### Home Position
-Sends the home position latitude (rad), longitude (rad), and altitude (m).
-
-**inline void home_lat_rad(const double val)** Sets the home position latitude, rad.
-
-**inline void home_lon_rad(const double val)** Sets the home position longitude, rad.
-
-**inline void home_alt_m(const float val)** Sets the home position altitude, m.
-
-**inline void SendHomePos()** Sends the home position data.
-
-## Receiving Telemetry Data
-
-### IMU
-
-**optional<float> imu_accel_x_mps2()** Returns the IMU x accelerometer data, m/s/s, if it has been updated since the last time this method was called.
-
-**optional<float> imu_accel_y_mps2()** Returns the IMU y accelerometer data, m/s/s, if it has been updated since the last time this method was called.
-
-**optional<float> imu_accel_z_mps2()** Returns the IMU z accelerometer data, m/s/s, if it has been updated since the last time this method was called.
-
-**optional<float> imu_gyro_x_radps()** Returns the IMU x gyro data, rad/s, if it has been updated since the last time this method was called.
-
-**optional<float> imu_gyro_y_radps()** Returns the IMU y gyro data, rad/s, if it has been updated since the last time this method was called.
-
-**optional<float> imu_gyro_z_radps()** Returns the IMU z gyro data, rad/s, if it has been updated since the last time this method was called.
-
-**optional<float> imu_mag_x_ut()** Returns the IMU x magnetometer data, uT, if it has been updated since the last time this method was called.
-
-**optional<float> imu_mag_y_ut()** Returns the IMU y magnetometer data, uT, if it has been updated since the last time this method was called.
-
-**optional<float> imu_mag_z_ut()** Returns the IMU z magnetometer data, uT, if it has been updated since the last time this method was called.
-
-**optional<float> imu_die_temp_c()** Returns the IMU die temperature, C, if it has been updated since the last time this method was called.
-
-### Air Data
-
-**optional<float> static_pres_pa()** Returns the static pressure, Pa, if it has been updated since the last time this method was called.
-
-**optional<float> diff_pres_pa()** Returns the differential pressure, Pa, if it has been updated since the last time this method was called.
-
-**optional<float> static_pres_die_temp_c()** Returns the static pressure die temperature, C, if it has been updated since the last time this method was called.
-
-**optional<float> diff_pres_die_temp_c()** Returns the differential pressure die temperature, C, if it has been updated since the last time this method was called.
-
-### GNSS
-
-**optional<int8_t> gnss_fix()** Returns the GNSS fix, if it has been updated since the last time this method was called.
-
-**optional<int8_t> gnss_num_sats()** Returns the number of satellites used in the GNSS solution, if it has been updated since the last time this method was called.
-
-**optional<double> gnss_lat_rad()** Returns the latitude, rad, if it has been updated since the last time this method was called.
-
-**optional<double> gnss_lon_rad()** Returns the longitude, rad, if it has been updated since the last time this method was called.
-
-**optional<float> gnss_alt_msl_m()** Returns the altitude above mean sea level, m, if it has been updated since the last time this method was called.
-
-**optional<float> gnss_alt_wgs84_m()** Returns the altitude above the WGS84 ellipsoid, m, if it has been updated since the last time this method was called.
-
-**optional<float> gnss_hdop()** Returns the horizontal dilution of precision if it has been updated since the last time this method was called.
-
-**optional<float> gnss_vdop()** Returns the vertical dilution of precision if it has been updated since the last time this method was called.
-
-**optional<float> gnss_track_rad()** Returns the GNSS ground track, rad, if it has been updated since the last time this method was called.
-
-**optional<float> gnss_spd_mps()** Returns the GNSS estimated ground speed, m/s, if it has been updated since the last time this method was called.
-
-**optional<float> gnss_horz_acc_m()** Returns the GNSS estimated horizontal position accuracy, m, if it has been updated since the last time this method was called.
-
-**optional<float> gnss_vert_acc_m()** Returns the GNSS estimated vertical position accuracy, m, if it has been updated since the last time this method was called.
-
-**optional<float> gnss_vel_acc_mps()** Returns the GNSS estimated velocity accuracy, m/s, if it has been updated since the last time this method was called.
-
-**optional<float> gnss_track_acc_rad()** Returns the GNSS estimated track accuracy, rad, if it has been updated since the last time this method was called.
-
-**optional<float> gnss_yaw_rad()** Returns the GNSS yaw, rad, if it has been updated since the last time this method was called.
-
-### Navigation Filter
-
-**optional<double> nav_lat_rad()** Returns the latitude, rad, from the navigation filter, if it has been updated since the last time this method was called.
-
-**optional<double> nav_lon_rad()** Returns the longitude, rad, from the navigation filter, if it has been updated since the last time this method was called.
-
-**optional<float> nav_alt_msl_m()** Returns the altitude above mean sea level, m, if it has been updated since the last time this method was called.
-
-**optional<float> nav_alt_agl_m()** Returns the altitude above ground level, m, if it has been updated since the last time this method was called.
-
-**optional<float> nav_north_pos_m()** Returns the position north of the home position, m, if it has been updated since the last time this method was called.
-
-**optional<float> nav_east_pos_m()** Returns the position east of the home position, m, if it has been updated since the last time this method was called.
-
-**optional<float> nav_down_pos_m()** Returns the position down from the home position, m, if it has been updated since the last time this method was called.
-
-**optional<float> nav_north_vel_mps()** Returns the vehicle velocity in the north direction, m/s, if it has been updated since the last time this method was called.
-
-**optional<float> nav_east_vel_mps()** Returns the vehicle velocity in the east direction, m/s, if it has been updated since the last time this method was called.
-
-**optional<float> nav_down_vel_mps()** Returns the vehicle velocity in the down direction, m/s, if it has been updated since the last time this method was called.
-
-**optional<float> nav_gnd_spd_mps()** Returns the vehicle ground speed, m/s, if it has been updated since the last time this method was called.
-
-**optional<float> nav_ias_mps()** Returns the indicated airspeed, m/s, if it has been updated since the last time this method was called.
-
-**optional<float> nav_pitch_rad()** Returns the pitch angle, rad, if it has been updated since the last time this method was called.
-
-**optional<float> nav_roll_rad()** Returns the roll angle, rad, if it has been updated since the last time this method was called.
-
-**optional<float> nav_hdg_rad()** Returns the vehicle heading, rad, if it has been updated since the last time this method was called.
-
-**optional<float> nav_gyro_x_radps()** Returns the corrected gyro x measurement, rad/s, if it has been updated since the last time this method was called.
-
-**optional<float> nav_gyro_y_radps()** Returns the corrected gyro y measurement, rad/s, if it has been updated since the last time this method was called.
-
-**optional<float> nav_gyro_z_radps()** Returns the corrected gyro z measurement, rad/s, if it has been updated since the last time this method was called.
-
-
-### Home Position
-
-**optional<double> home_lat_rad()** Returns the home position latitude, rad, if it has been updated since the last time this method was called.
-
-**optional<double> home_lon_rad()** Returns the home position longitude, rad, if it has been updated since the last time this method was called.
-
-**optional<float> home_alt_m()** Returns the home position altitude, m, if it has been updated since the last time this method was called.
-
 ## Parameters
 
 **static constexpr std::size_t params_size()** The number of parameters supported.
@@ -601,95 +441,3 @@ Sends the home position latitude (rad), longitude (rad), and altitude (m).
 ## Utility
 
 **void SendStatusText(Severity severity, char const &ast;msg)** Sends a status text given the severity and a message.
-
-## UAS Traffic Management (UTM)
-
-### Config
-
-**void utm_update_period_s(const float val)** Sets the update rate for broadcasting UTM messages.
-
-**constexpr std::size_t UTM_UAS_ID_LEN** The length of the UAS ID.
-
-**void utm_uas_id(const std::array<uint8_t, UTM_UAS_ID_LEN> &id)** Sets the UTM UAS ID.
-
-### Broadcast Data
-
-**void utm_unix_time_us(const uint64_t val)** Time since the unix epoch, us.
-
-**void utm_lat_rad(const double val)** Latitude, rad.
-
-**void utm_lon_rad(const double val)** Longitude, rad.
-
-**void utm_alt_wgs84_m(const float val)** Altitude above the WGS84 ellipsoid, m.
-
-**void utm_rel_alt_m(const float val)** Altitude above ground, m.
-
-**void utm_north_vel_mps(const float val)** North velocity, m/s.
-
-**void utm_east_vel_mps(const float val)** East velocity, m/s.
-
-**void utm_down_vel_mps(const float val)** Down velocity, m/s.
-
-**void utm_horz_acc_m(const float val)** Horizontal position accuracy, m.
-
-**void utm_vert_acc_m(const float val)** Vertical position accuracy, m.
-
-**void utm_vel_acc_mps(const float val)** Velocity accuracy, m/s.
-
-**void utm_next_lat_rad(const double val)** Latitude of the next waypoint, rad.
-
-**void utm_next_lon_rad(const double val)** Longitude of the next waypoint, rad.
-
-**void utm_next_alt_wgs84_m(const float val)** Altitude above the WGS84 ellipsoid of the next waypoint, m.
-
-**void utm_flight_state(const FlightState val)** UTM flight state, which is an enum:
-
-| Enum | Description |
-| --- | --- |
-| FLIGHT_STATE_UNKNOWN | The flight state can't be determined |
-| FLIGHT_STATE_GROUND | UAS on ground |
-| FLIGHT_STATE_AIRBORNE | UAS airborne |
-| FLIGHT_STATE_EMERGENCY | UAS is in an emergency flight state |
-| FLIGHT_STATE_NOCTRL | UAS has no active controls |
-
-### Receive Data
-
-**std::size_t utm_num_rx()** Number of UTM broadcasts received.
-
-**void UtmClearRx()** Clear the received data.
-
-**optional<uint64_t> get_utm_unix_time_us(const std::size_t idx)** Returns the received unix time (if available) from the given UTM broadcast index.
-
-**optional<std::array<uint8_t, UTM_UAS_ID_LEN>> get_utm_uas_id(const std::size_t idx)** Returns the received UAS ID (if available) from the given UTM broadcast index.
-
-**optional<double> get_utm_lat_rad(const std::size_t idx)** Returns the received latitude, rad (if available) from the given UTM broadcast index.
-
-**optional<double> get_utm_lon_rad(const std::size_t idx)** Returns the received longitude, rad (if available) from the given UTM broadcast index.
-
-**optional<float> get_utm_alt_wgs84_m(const std::size_t idx)** Returns the received altitude above the WGS84 ellipsoid, m (if available) from the given UTM broadcast index.
-
-**optional<float> get_utm_rel_alt_m(const std::size_t idx)** Returns the received altitude above ground, m (if available) from the given UTM broadcast index.
-
-**optional<float> get_utm_north_vel_mps(const std::size_t idx)** Returns the received north velocity, m/s (if available) from the given UTM broadcast index.
-
-**optional<float> get_utm_east_vel_mps(const std::size_t idx)** Returns the received east velocity, m/s (if available) from the given UTM broadcast index.
-
-**optional<float> get_utm_down_vel_mps(const std::size_t idx)** Returns the received down velocity, m/s (if available) from the given UTM broadcast index.
-
-**optional<float> get_utm_horz_acc_m(const std::size_t idx)** Returns the received horizontal position accuracy, m (if available) from the given UTM broadcast index.
-
-**optional<float> get_utm_vert_acc_m(const std::size_t idx)** Returns the received vertical position accuracy, m (if available) from the given UTM broadcast index.
-
-**optional<float> get_utm_vel_acc_mps(const std::size_t idx)** Returns the received velocity accuracy, m/s (if available) from the given UTM broadcast index.
-
-**optional<double> get_utm_next_lat_rad(const std::size_t idx)** Returns the received latitude of the next waypoint, rad (if available) from the given UTM broadcast index.
-
-**optional<double> get_utm_next_lon_rad(const std::size_t idx)** Returns the received longitude of the next waypoint, rad (if available) from the given UTM broadcast index.
-
-**optional<float> get_utm_next_alt_wgs84_m(const std::size_t idx)** Returns the received altitude above the WGS84 ellipsoid of the next waypoint, m (if available) from the given UTM broadcast index.
-
-**float get_utm_update_period_s(const std::size_t idx)** Returns the received update period, s from the given UTM broadcast index.
-
-**FlightState get_utm_flight_state(const std::size_t idx)** Returns the received UTM flight state from the given UTM broadcast index.
-
-
