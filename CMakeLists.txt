@@ -35,8 +35,9 @@ if (DEFINED MCU)
   # Fetch navigation
   FetchContent_Declare(
   navigation
+  #SOURCE_DIR /home/tuan/Projects/new_ekf/test_bfs_navigation
   GIT_REPOSITORY git@github.com:TL-4319/test_bfs_navigation.git
-  GIT_TAG 3199c0bb2bea19a1240a2f7413fadc2808f084c7
+  GIT_TAG 0e62fd6d23c90f522168c3f075270e839eba7b4c
   )
   FetchContent_MakeAvailable(navigation)
   # Add the library target
